@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Int32MultiArray, Bool
 import py_trees
+import time
 
 class MoveArmNode(py_trees.behaviour.Behaviour):
     def __init__(self, name, node: Node, q1: int,q2: int,q3: int ,efector: int):
@@ -54,6 +55,25 @@ class MoveArmNode(py_trees.behaviour.Behaviour):
             self.done = True
 
     def terminate(self, new_status):
+        """Limpieza al terminar el comportamiento"""
+        attempts = 0
+
+        while attempts < 10:
+            attempts += 1
+            time.sleep(0.1)  # 10 Hz
+
+        # Destruye la suscripción
+        if hasattr(self, 'subscription') and self.subscription :
+            self.node.destroy_subscription(self.subscription )
+            self.subscription  = None  # Marca como destruido
+
+        # Destruye el publicador
+        if hasattr(self, 'publisher') and self.publisher:
+            self.node.destroy_publisher(self.publisher)
+            self.publisher = None  # Marca como destruido
+
+        self.control_timer.cancel()
+
         # Resetear estado interno para permitir reutilización
         self._done = False
         return super().terminate(new_status)

@@ -9,17 +9,19 @@ import tf_transformations
 import math
 
 class InputCoordinates(py_trees.behaviour.Behaviour):
-    def __init__(self, name="InputCoordinates", node=None,ubication=None):  # Añade parámetro
+    def __init__(self, name="InputCoordinates", node=None,target_type=None):  # Añade parámetro
         super().__init__(name)
         self.node = node
  
         # Declarar puerto de salida
         self.blackboard = py_trees.blackboard.Client()
         self.blackboard.register_key(key="order_info",access=py_trees.common.Access.READ)
+        self.blackboard.register_key(key="other_robot", access=py_trees.common.Access.READ)
         self.blackboard.register_key(key="goal_coords",access=py_trees.common.Access.WRITE)
-        self.namespace = None
-        self.cubo_ns = None
-        self.ubication = ubication
+        
+        self.robot_name = None
+        self.target_name = None
+        self.target_type = target_type
 
         self.tx = None
         self.ty = None
@@ -28,8 +30,8 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
         self.done_callback = False
 
         #Parametros de corrección
-        self.x1 = 0.05
-        self.y1 = -0.05
+        self.x1 = 0.02
+        self.y1 = -0.07
 
          # TF
         self.tf_buffer = Buffer()
@@ -55,19 +57,28 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
 
     def initialise(self):
         # Se llama automáticamente antes de cada ejecución
-        self.namespace,self.cubo_ns = self.blackboard.order_info
-
+        if(self.target_type =='cubo'):
+            self.robot_name,self.target_name = self.blackboard.order_info
+        elif(self.target_type =='deposito'):
+            self.robot_name,_ = self.blackboard.order_info
+            self.target_name = self.target_type 
+        elif(self.target_type =='origen'):
+            self.robot_name,_ = self.blackboard.order_info
+            self.target_name = f'{self.robot_name}_origen'
+        elif(self.target_type =='other_origin'):
+            self.robot_name = self.blackboard.other_robot
+            self.target_name = f'{self.robot_name}_origen'
         self.done_init = True
         pass
 
     def pos_rel_callaback(self, msg):
-        if(self.namespace=='robot1' and self.done_init):
+        if(self.robot_name=='robot1' and self.done_init):
             self.tx = msg.posx1
             self.ty = msg.posy1
             self.yaw = msg.yaw1
             self.done_callback = True
 
-        if(self.namespace=='robot2' and self.done_init):
+        if(self.robot_name=='robot2' and self.done_init):
             self.tx = msg.posx2
             self.ty = msg.posy2
             self.yaw = msg.yaw2
@@ -75,6 +86,7 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
 
     def callback_tags(self, msg):
         # Almacena las coordenadas absolutas de cada tag
+        self.tags_dict.clear()
         for tag in msg.tags:
             self.tags_dict[tag.nombre] = (tag.posx, tag.posy)
 
@@ -83,31 +95,26 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
              # Verificar condiciones necesarias (todas deben ser True)
             if not (self.done_init and 
                     self.done_callback and 
-                    self.namespace in self.tags_dict and 
-                    self.cubo_ns in self.tags_dict and
+                    self.robot_name in self.tags_dict and 
+                    self.target_name in self.tags_dict and
                     self.tx is not None and
                     self.ty is not None and
                     self.yaw is not None):
                 self.node.get_logger().warn("Esperando datos iniciales...", throttle_duration_sec=1)
                 return py_trees.common.Status.RUNNING
 
-            
-            if(self.ubication=='deposito'):
-                self.cubo_ns = self.ubication
-            elif(self.ubication=='origen'):
-                self.cubo_ns = f'{self.namespace}_origen'
-            #pos_robot = self.tags_dict[self.namespace]  # (x, y)
-            pos_cubo = self.tags_dict[self.cubo_ns]     # (x, y)
+            #pos_robot = self.tags_dict[self.robot_name]  # (x, y)
+            pos_target = self.tags_dict[self.target_name]     # (x, y)
 
-            cubo_x, cubo_y = pos_cubo
+            target_x, target_y = pos_target
 
             # Obtener la transformada de world -> robotX/odom
             try:
                 #self.node.get_logger().info(f"Posición tx:{self.tx}, ty:{self.ty}")
 
-                # Transformar punto del cubo a frame del robot (odom)
-                dx = cubo_x - self.tx
-                dy = cubo_y - self.ty
+                # Transformar punto del target a frame del robot (odom)
+                dx = target_x - self.tx
+                dy = target_y - self.ty
 
                 rel_x = math.cos(self.yaw) * dx + math.sin(self.yaw) * dy - self.x1
                 rel_y = -math.sin(self.yaw) * dx + math.cos(self.yaw) * dy - self.y1

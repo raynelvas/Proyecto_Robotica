@@ -17,6 +17,7 @@
 #include <sensor_msgs/msg/range.h>
 #include <geometry_msgs/msg/twist.h>
 #include <Adafruit_Sensor.h>
+#include <std_msgs/msg/bool.h>
 
 #include <WiFi.h>  // ← Nueva librería
 
@@ -28,14 +29,18 @@ rclc_support_t support;
 rcl_node_t node;
 
 rcl_subscription_t subscriber;
+rcl_subscription_t reset_subscriber;
 rcl_publisher_t odom_publisher;
 rcl_publisher_t imu_publisher;
 rcl_publisher_t range_publisher;
+rcl_publisher_t reset_publisher;
 
 geometry_msgs__msg__Twist msg;
 nav_msgs__msg__Odometry odom_msg;
 sensor_msgs__msg__Imu imu_msg;
 sensor_msgs__msg__Range range_msg;
+std_msgs__msg__Bool sub_msg;
+std_msgs__msg__Bool pub_msg;
 
 rcl_timer_t odom_timer;
 rcl_timer_t imu_timer;
@@ -243,6 +248,22 @@ void setup() {
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
   RCCHECK(rclc_node_init_default(&node, "car","robot2", &support));
 
+  // 4. Crear suscriptor para el servicio
+  RCCHECK(rclc_subscription_init_default(
+            &reset_subscriber,
+            &node,
+            ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+            "reset/request_srv" 
+          ));
+
+  // 5. Crear publicador para el booleano
+  RCCHECK(rclc_publisher_init_default(
+            &reset_publisher,
+            &node,
+            ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Bool),
+            "reset/response_srv" 
+          ));
+
   // subscritor for cmd_vel topic
   RCCHECK(rclc_subscription_init_default(
             &subscriber,
@@ -300,8 +321,9 @@ void setup() {
             sync_timer_callback));
 
   // create executor
-  RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
+  RCCHECK(rclc_executor_init(&executor, &support.context, 6, &allocator));
   RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg, &subscription_callback, ON_NEW_DATA));
+  RCCHECK(rclc_executor_add_subscription(&executor,&reset_subscriber, &sub_msg, &reset_callback, ON_NEW_DATA));
   RCCHECK(rclc_executor_add_timer(&executor, &odom_timer));
   RCCHECK(rclc_executor_add_timer(&executor, &imu_timer));
   RCCHECK(rclc_executor_add_timer(&executor, &range_timer));
@@ -529,6 +551,38 @@ void sync_timer_callback(rcl_timer_t* timer, int64_t last_call_time) {
   syncTime();
 }
 
+
+// Callback del servicio
+void reset_callback(const void *msg_in)
+{
+  const std_msgs__msg__Bool *msg = (const std_msgs__msg__Bool *)msg_in;
+   // Imprimir el valor real
+  Serial.printf("Booleano recibido: %s\n", msg->data ? "true" : "false");
+  if(msg->data){
+    ax = 0, ay = 0, az = 0;
+    gx = 0, gy = 0, gz = 0;
+    roll = 0, pitch = 0, yaw = 0;
+    v = 0, w = 0;
+    
+    x_pos = 0.0;
+    y_pos = 0.0;
+    yaw_odom = 0.0;
+    yaw_imu = 0.0;
+    publish_bool(true);
+  }else{
+    Serial.println("Error al resetear: valor falso recibido");
+    publish_bool(false);
+  }
+}
+
+
+// Función para publicar el booleano
+void publish_bool(bool value) {
+  pub_msg.data = value;
+  //RCSOFTCHECK(rcl_publish(&publisher, &pub_msg, NULL));
+  rcl_publish(&reset_publisher, &pub_msg, NULL);
+  Serial.printf("Booleano publicado: %s\n", value ? "true" : "false");
+}
 
 //_________________________________________________
 

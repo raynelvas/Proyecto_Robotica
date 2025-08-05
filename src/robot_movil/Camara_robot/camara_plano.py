@@ -20,12 +20,12 @@ def rotation_matrix_to_euler_angles(R):
     return np.degrees([x, y, z])
 
 def main():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("/dev/video2")
     if not cap.isOpened():
         print("No se pudo acceder a la cámara.")
         return
 
-    with np.load('parametros_calibracion.npz') as X:
+    with np.load('src/robot_movil/Camara_robot/parametros_calibracion.npz') as X:
         camera_matrix, dist_coeffs = X['mtx'], X['dist']
 
     tag_size = 0.06  # 6 cm

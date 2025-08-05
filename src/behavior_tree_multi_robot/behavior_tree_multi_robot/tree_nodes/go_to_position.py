@@ -5,27 +5,29 @@ from nav_msgs.msg import Odometry
 from tf_transformations import euler_from_quaternion
 import numpy as np
 import py_trees
+import time
 
 
 class GoToPosition(py_trees.behaviour.Behaviour):
-    def __init__(self, name="GoToPosition", node=None, goal_tolerance=None):
+    def __init__(self, name="GoToPosition", node=None, position='same', goal_tolerance=None):
         super().__init__(name)
         # Declarar puertos de entrada
         self.blackboard = py_trees.blackboard.Client()
         self.blackboard.register_key(key="order_info",access=py_trees.common.Access.READ)
+        self.blackboard.register_key(key="other_robot", access=py_trees.common.Access.READ)
         self.blackboard.register_key(key="goal_coords",access=py_trees.common.Access.READ        )
 
         self.node = node
         self.namespace = None
-        self.cubo_ns = None
         self.goal = self.blackboard.goal_coords # [x, y]
         self.current_pose = np.zeros(3)  # x, y, theta
+        self.current_twist = np.zeros(2)  # Vx, Wz
         self.reached_goal = False
 
         # Parámetros de control
-        self.k_linear = 0.4
-        self.k_angular = 1.2
-        self.max_linear_speed = 0.5
+        self.k_linear = 0.3
+        self.k_angular = 1.0
+        self.max_linear_speed = 0.35
         self.max_angular_speed = 1.0
         self.goal_tolerance = goal_tolerance
         self.angle_tolerance = 0.08
@@ -38,12 +40,16 @@ class GoToPosition(py_trees.behaviour.Behaviour):
 
         self.done_init = False
         self.done_odom = False
-        
-        
+
+        self.position = position
+                
 
     def initialise(self):
         """Solo se ejecuta cuando el nodo se activa por primera vez"""
-        self.namespace,self.cubo_ns = self.blackboard.order_info
+        if(self.position == 'other'):
+            self.namespace = self.blackboard.other_robot
+        else:    
+            self.namespace,_ = self.blackboard.order_info
         self.goal = self.blackboard.goal_coords # [x, y]
         self.prev_angular_z = 0.0
         self.reached_goal = False
@@ -82,6 +88,10 @@ class GoToPosition(py_trees.behaviour.Behaviour):
             #self.node.get_logger().info(f"Odometría recibida: x={msg.pose.pose.position.x}, y={msg.pose.pose.position.y}")
             self.current_pose[0] = msg.pose.pose.position.x
             self.current_pose[1] = msg.pose.pose.position.y
+
+            self.current_twist[0] = msg.twist.twist.linear.x
+            self.current_twist[1] = msg.twist.twist.angular.z
+
             quat = msg.pose.pose.orientation
             _, _, self.current_pose[2] = euler_from_quaternion(
                 [quat.x, quat.y, quat.z, quat.w]
@@ -151,7 +161,16 @@ class GoToPosition(py_trees.behaviour.Behaviour):
     def terminate(self, new_status):
         """Limpieza al terminar el comportamiento"""
         if self.done_init:
-            self.cmd_vel_pub.publish(Twist())  # Parada de seguridad
+            self.node.get_logger().info("Ejecutando parada de seguridad")
+
+            # Intenta detener el robot hasta 10 veces o hasta que esté quieto
+            attempts = 0
+
+            while attempts < 10:
+                self.cmd_vel_pub.publish(Twist())  # Parada de seguridad
+                attempts += 1
+                time.sleep(0.1)  # 10 Hz
+
             
             # Destruye la suscripción
             if hasattr(self, 'odom_sub') and self.odom_sub:

@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/MoveRobot.srv"
   "srv/ElegirRobot.srv"
   "srv/GetTagPose.srv"
+  "srv/ResetTransform.srv"
   "msg/AprilTagWorld.msg"
   "msg/AprilTagWorldArray.msg"
   "msg/PosRelativa.msg"

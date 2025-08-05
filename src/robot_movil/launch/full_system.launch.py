@@ -17,15 +17,22 @@ def generate_launch_description():
     # Definir los delays en segundos
     DELAY_CAMARA = 0.0      # Inmediato
     DELAY_ROBOTCAR = 5.0    # 2 segundos después de cámara
-    DELAY_CUBORVIZ = 10.0    # 5 segundos después de inicio
-    DELAY_GUI = 15.0         # 8 segundos después de inicio
-    DELAY_BT_MAIN = 30.0    # 10 segundos después de inicio
+    DELAY_CUBORVIZ = 7.0    # 5 segundos después de inicio
+    DELAY_GUI = 10.0         # 8 segundos después de inicio
+    DELAY_BT_MAIN = 12.0    # 10 segundos después de inicio
 
     # Nodo cámara (se ejecuta inmediatamente)
     camara_node = Node(
         package='robot_movil', 
         executable='camara', 
-        name='camara', 
+        name='april_tag_camera_node', 
+        output='screen'
+    )
+
+    tf_origen_node = Node(
+        package='robot_movil', 
+        executable='TForigen', 
+        name='tf_origen_robot_node', 
         output='screen'
     )
 
@@ -34,8 +41,8 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='static_tf_camara_to_odom',
         arguments=[
-            '--x', '0.05',        # Desplazamiento en X (metros)
-            '--y', '-0.05',        # Desplazamiento en Y
+            '--x', '0.02',        # Desplazamiento en X (metros)
+            '--y', '-0.07',        # Desplazamiento en Y
             '--z', '0.0',       # Desplazamiento en Z
             '--yaw', '0.0',      # Rotación en Z (radianes)
             '--pitch', '0.0',    # Rotación en Y
@@ -50,8 +57,8 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='static_tf_camara_to_odom',
         arguments=[
-            '--x', '0.05',        # Desplazamiento en X (metros)
-            '--y', '-0.05',        # Desplazamiento en Y
+            '--x', '0.02',        # Desplazamiento en X (metros)
+            '--y', '-0.07',        # Desplazamiento en Y
             '--z', '0.0',       # Desplazamiento en Z
             '--yaw', '0.0',      # Rotación en Z (radianes)
             '--pitch', '0.0',    # Rotación en Y
@@ -116,6 +123,7 @@ def generate_launch_description():
         camara_node,
         static_camara1,
         static_camara2,
+        tf_origen_node,
         robotcar_launch,
         cuborviz_node,
         gui_node,

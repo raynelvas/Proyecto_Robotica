@@ -5,6 +5,7 @@ from std_msgs.msg import ColorRGBA
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 from msg_nuevos.msg import AprilTagWorldArray
+import tf_transformations
 
 class CuboPublisher(Node):
     def __init__(self):
@@ -67,13 +68,19 @@ class CuboPublisher(Node):
         else:
             marker.ns = tag.nombre
         
+        yaw = tag.yaw                
+        quat = tf_transformations.quaternion_from_euler(0, 0, yaw)
+        
         marker.id = tag.id
         marker.type = marker_type
         marker.action = Marker.ADD
         marker.pose.position.x = tag.posx
         marker.pose.position.y = tag.posy
         marker.pose.position.z = z_pos
-        marker.pose.orientation.w = 1.0
+        marker.pose.orientation.x = quat[0]
+        marker.pose.orientation.y = quat[1]
+        marker.pose.orientation.z = quat[2]
+        marker.pose.orientation.w = quat[3]
         marker.scale.x = scale_x
         marker.scale.y = scale_y
         marker.scale.z = scale_z
@@ -98,10 +105,16 @@ class CuboPublisher(Node):
         else:
             tf.child_frame_id = tag.nombre
 
+        yaw = tag.yaw                
+        quat = tf_transformations.quaternion_from_euler(0, 0, yaw)
+
         tf.transform.translation.x = tag.posx
         tf.transform.translation.y = tag.posy
         tf.transform.translation.z = 0.0
-        tf.transform.rotation.w = 1.0
+        tf.transform.rotation.x = quat[0]
+        tf.transform.rotation.y = quat[1]
+        tf.transform.rotation.z = quat[2]
+        tf.transform.rotation.w = quat[3]
         self.br.sendTransform(tf)
 
     def delete_marker(self, object_name):

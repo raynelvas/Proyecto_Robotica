@@ -38,6 +38,7 @@ setup(
             'guardar = robot_movil.registrar_datos:main',
             'puentebt = robot_movil.puente_BT:main',
             'camara = Camara_robot.tag_detector_node:main',
+            'TForigen = Camara_robot.AprilTagTF_node:main',
             'cuborviz = Camara_robot.cubo_marker_publisher:main',
         ],
     },
