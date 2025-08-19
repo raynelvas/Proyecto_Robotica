@@ -7,6 +7,7 @@ from tf2_ros import Buffer, TransformListener
 from msg_nuevos.msg import AprilTagWorldArray, PosRelativa  # Ajusta el import según tu paquete
 import tf_transformations
 import math
+import time
 
 class InputCoordinates(py_trees.behaviour.Behaviour):
     def __init__(self, name="InputCoordinates", node=None,target_type=None):  # Añade parámetro
@@ -77,12 +78,17 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
             self.ty = msg.posy1
             self.yaw = msg.yaw1
             self.done_callback = True
+            self.x1 = 0.02
+            self.y1 = -0.01
+
 
         if(self.robot_name=='robot2' and self.done_init):
             self.tx = msg.posx2
             self.ty = msg.posy2
             self.yaw = msg.yaw2
             self.done_callback = True
+            self.x1 = -0.08
+            self.y1 = -0.08
 
     def callback_tags(self, msg):
         # Almacena las coordenadas absolutas de cada tag
@@ -93,9 +99,9 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
     def update(self):        
         try:            
              # Verificar condiciones necesarias (todas deben ser True)
+             # self.robot_name in self.tags_dict and 
             if not (self.done_init and 
                     self.done_callback and 
-                    self.robot_name in self.tags_dict and 
                     self.target_name in self.tags_dict and
                     self.tx is not None and
                     self.ty is not None and
@@ -135,6 +141,9 @@ class InputCoordinates(py_trees.behaviour.Behaviour):
 
     def terminate(self, new_status):
         # Se llama cuando el estado está por cambiar
+
+        time.sleep(1)  # 10 Hz
+
         self.done_init = False
         self.done_callback = False
         if new_status == py_trees.common.Status.INVALID:

@@ -4,6 +4,7 @@ from rclpy.node import Node
 from std_msgs.msg import Int32MultiArray, Bool
 import py_trees
 import time
+from msg_nuevos.msg import Estado
 
 class MoveArmNode(py_trees.behaviour.Behaviour):
     def __init__(self, name, node: Node, q1: int,q2: int,q3: int ,efector: int):
@@ -26,6 +27,9 @@ class MoveArmNode(py_trees.behaviour.Behaviour):
         self.msg.data = [self.q1, self.q2, self.q3, self.efector]  # Ejemplo para agarrar
         #self.node.get_logger().info(f"MSG: {self.msg}")
 
+        self.tag_pub = self.node.create_publisher(Estado, 'estado_robot', 10)
+        self.msg_estado = Estado()
+
     def setup(self, **kwargs):
         return True
 
@@ -40,7 +44,9 @@ class MoveArmNode(py_trees.behaviour.Behaviour):
             f"/{self.namespace}/response_srv",
             self.listener_callback,
             10)
-
+        if self.namespace == 'robot2':
+            self.q1 = self.q1 - 20
+            self.msg.data = [self.q1, self.q2, self.q3, self.efector]  # Ejemplo para agarrar
         self.publisher.publish(self.msg)
         self.node.get_logger().info(f"[{self.namespace}] Enviando comando: agarrar objeto")
 
@@ -48,6 +54,8 @@ class MoveArmNode(py_trees.behaviour.Behaviour):
         if self.done:
             self.node.get_logger().info("MoveArm COMPLETE")
             return py_trees.common.Status.SUCCESS
+        self.msg_estado.brazo = True
+        self.tag_pub.publish(self.msg_estado)
         return py_trees.common.Status.RUNNING
 
     def listener_callback(self, msg: Bool):
@@ -72,8 +80,9 @@ class MoveArmNode(py_trees.behaviour.Behaviour):
             self.node.destroy_publisher(self.publisher)
             self.publisher = None  # Marca como destruido
 
-        self.control_timer.cancel()
-
         # Resetear estado interno para permitir reutilización
         self._done = False
+
+        self.msg_estado.brazo = False
+        self.tag_pub.publish(self.msg_estado)
         return super().terminate(new_status)

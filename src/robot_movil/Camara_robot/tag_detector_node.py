@@ -12,26 +12,28 @@ from msg_nuevos.msg import AprilTagWorld, AprilTagWorldArray
 class AprilTagCameraNode(Node):
     def __init__(self):
         super().__init__('april_tag_camera_node')
+
+        self.use_undistort = False  # o False si no quieres corregir
         
         # Configuración de tags para robots y cubos
         self.tag_config = {
             # Robots - Colores distintivos y contrastantes (mantenidos igual)
-            9: ("robot1", (0, 120, 255)),    # Azul brillante
+            0: ("robot1", (0, 120, 255)),    # Azul brillante
             1: ("robot2", (255, 50, 50)),    # Rojo vivo
             
             # Cubos - Colores completamente diferentes y contrastantes
-            7: ("cubo1", (255, 0, 255)),     # Magenta
-            6: ("cubo2", (255, 255, 0)),     # Amarillo
-            458: ("cubo3", (0, 255, 255)),     # Cian
-            459: ("cubo4", (255, 128, 0)),     # Naranja intenso
-            463: ("cubo5", (128, 0, 255)),     # Violeta
+            2: ("cubo1", (255, 0, 255)),     # Magenta
+            3: ("cubo2", (255, 255, 0)),     # Amarillo
+            4: ("cubo3", (0, 255, 255)),     # Cian
+            5: ("cubo4", (255, 128, 0)),     # Naranja intenso
+            6: ("cubo5", (128, 0, 255)),     # Violeta
             
             # Depósito - Color distintivo (mantenido igual)
-            5: ("deposito", (255, 153, 204)), # Rosa pastel
+            9: ("deposito", (255, 153, 204)), # Rosa pastel
             
             # Zonas de origen - Tonos morados/púrpura (mantenidos igual)
-            3: ("robot1_origen", (180, 0, 180)), # Púrpura
-            4: ("robot2_origen", (153, 255, 204)), # Verde menta pastel 
+            8: ("robot1_origen", (180, 0, 180)), # Púrpura
+            7: ("robot2_origen", (153, 255, 204)), # Verde menta pastel 
         }
 
         # Calibración de cámara
@@ -39,9 +41,20 @@ class AprilTagCameraNode(Node):
         with np.load(calibration_file) as X:
             self.camera_matrix, self.dist_coeffs = X['mtx'], X['dist']
         
-        self.tag_size = 0.075
-        self.detector = Detector(families='tag36h11')
-        self.cap = cv2.VideoCapture("/dev/video2")
+        self.tag_size = 0.046
+        self.detector = Detector(
+            families='tag36h11',
+            nthreads=2,
+            quad_decimate=1.0,
+            quad_sigma=0.0,
+            refine_edges=True,
+            decode_sharpening=0.25,
+            debug=False
+        )
+
+        self.cap = cv2.VideoCapture("/dev/video10")
+
+
         #self.cap = cv2.VideoCapture("http://192.168.100.164:8080/video")
         
         self.tag_pub = self.create_publisher(AprilTagWorldArray, 'apriltag_world_array', 10)
@@ -60,8 +73,14 @@ class AprilTagCameraNode(Node):
         if not ret:
             self.get_logger().warn("No se pudo leer el frame de la cámara.")
             return
-
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # si se desea, corregir distorsión antes de detectar
+        if self.use_undistort and (self.dist_coeffs is not None) and (np.any(self.dist_coeffs != 0)):
+            frame_und = cv2.undistort(frame, self.camera_matrix, self.dist_coeffs)
+        else:
+            frame_und = frame
+        
+        gray = cv2.cvtColor(frame_und, cv2.COLOR_BGR2GRAY)
         detections = self.detector.detect(
             gray,
             estimate_tag_pose=True,

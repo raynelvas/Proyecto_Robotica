@@ -6,7 +6,8 @@ from behavior_tree_multi_robot.tree_nodes import (
     GoToPosition, 
     DetectObject,
     MoveArmNode,
-    CheckOtherRobotPresent
+    ApproachObject,
+    CheckOtherRobotPresent    
 )
 import py_trees
 
@@ -15,20 +16,23 @@ def create_navigation_sequences(node):
     nav_seq1 = py_trees.composites.Sequence("NavigateToObject", memory=True)
     nav_seq1.add_children([
         InputCoordinates(name="GetCoordinatesObject",node=node,target_type='cubo'),
-        GoToPosition(name="NavegateObj",node=node, goal_tolerance=0.1)
-        #DetectObject(name="DetectObject",node=node)
+        GoToPosition(name="NavegateObj",node=node, goal_tolerance=0.4),
+        ResetTransformNode(name="RobotTransform", node=node),
+        InputCoordinates(name="GetCoordinatesObject",node=node,target_type='cubo'),
+        GoToPosition(name="NavegateObj",node=node, goal_tolerance=0.08),
+        DetectObject(name="Approch",node=node)
     ])
 
     nav_seq2 = py_trees.composites.Sequence("NavigateToDeposit", memory=True)
     nav_seq2.add_children([
         InputCoordinates(name="GetCoordinatesDeposit",node=node,target_type='deposito'),
-        GoToPosition(name="NavegateDep",node=node, goal_tolerance=0.15)
+        GoToPosition(name="NavegateDep",node=node, goal_tolerance=0.1)
     ])
 
     nav_seq3 = py_trees.composites.Sequence("NavigateToOrigin", memory=True)
     nav_seq3.add_children([
         InputCoordinates(name="GetCoordinatesOrigin",node=node,target_type='origen'),
-        GoToPosition(name="NavegateOrg",node=node, goal_tolerance=0.04) 
+        GoToPosition(name="NavegateOrg",node=node, goal_tolerance=0.03) 
     ])
     return nav_seq1, nav_seq2, nav_seq3
 #==================================================================================

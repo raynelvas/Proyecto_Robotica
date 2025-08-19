@@ -4,9 +4,9 @@ import glob
 import os
 
 # Configuración del patrón de calibración
-num_esquinas_x = 10  # columnas de esquinas internas
-num_esquinas_y = 7   # filas de esquinas internas
-tamano_cuadro_mm = 25  # tamaño de cada cuadro en milímetros
+num_esquinas_x = 6  # columnas de esquinas internas
+num_esquinas_y = 4   # filas de esquinas internas
+tamano_cuadro_mm = 29  # tamaño de cada cuadro en milímetros
 # Ruta relativa a la carpeta donde se guardan las imágenes
 ruta_imgs = 'calibracion_imgs/*.jpg'
 

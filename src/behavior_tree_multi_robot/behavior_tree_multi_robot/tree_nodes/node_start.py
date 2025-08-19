@@ -66,6 +66,7 @@ class WaitForStart(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.SUCCESS
         else:
             self.node.get_logger().warn("Faltan elementos requeridos (robot, cubo o depósito)")
+            self.start_received = False
             return py_trees.common.Status.RUNNING
 
     def terminate(self, new_status):

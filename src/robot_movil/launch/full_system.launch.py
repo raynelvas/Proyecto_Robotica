@@ -42,7 +42,7 @@ def generate_launch_description():
         name='static_tf_camara_to_odom',
         arguments=[
             '--x', '0.02',        # Desplazamiento en X (metros)
-            '--y', '-0.07',        # Desplazamiento en Y
+            '--y', '-0.01',        # Desplazamiento en Y
             '--z', '0.0',       # Desplazamiento en Z
             '--yaw', '0.0',      # Rotación en Z (radianes)
             '--pitch', '0.0',    # Rotación en Y
@@ -57,8 +57,8 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='static_tf_camara_to_odom',
         arguments=[
-            '--x', '0.02',        # Desplazamiento en X (metros)
-            '--y', '-0.07',        # Desplazamiento en Y
+            '--x', '-0.12',        # Desplazamiento en X (metros)
+            '--y', '-0.08',        # Desplazamiento en Y
             '--z', '0.0',       # Desplazamiento en Z
             '--yaw', '0.0',      # Rotación en Z (radianes)
             '--pitch', '0.0',    # Rotación en Y

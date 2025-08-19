@@ -6,6 +6,7 @@ from .move_arm import MoveArmNode
 from .node_start import WaitForStart
 from .reset_transform import ResetTransformNode
 from .other_robot import CheckOtherRobotPresent
+from .approach_object import ApproachObject
 
 
 __all__ = [
@@ -16,5 +17,7 @@ __all__ = [
     'GoToPosition',
     'DetectObject',
     'MoveArmNode',
+    'ApproachObject',
     'CheckOTherRobotPresent'
+    
 ]

@@ -21,6 +21,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AprilTagWorld.msg"
   "msg/AprilTagWorldArray.msg"
   "msg/PosRelativa.msg"
+  "msg/Estado.msg"
   DEPENDENCIES builtin_interfaces
 )
 

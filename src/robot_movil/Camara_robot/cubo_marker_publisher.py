@@ -28,7 +28,7 @@ class CuboPublisher(Node):
 
     def listener_callback(self, msg):
         # Procesamos cada tipo de objeto por separado
-        self.process_objects(msg, 'cubo', Marker.CUBE, 0.1, 0.1, 0.1)
+        self.process_objects(msg, 'cubo', Marker.CUBE, 0.06, 0.06, 0.13)
         self.process_objects(msg, 'deposito', Marker.CUBE, 0.2, 0.2, 0.02)
         self.process_objects(msg, 'origen', Marker.CYLINDER, 0.05, 0.05, 0.1)
 

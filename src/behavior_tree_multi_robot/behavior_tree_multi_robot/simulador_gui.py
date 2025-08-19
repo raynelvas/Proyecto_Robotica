@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 from datetime import datetime
 from std_msgs.msg import Bool  # Importa el tipo de mensaje
+from msg_nuevos.msg import Estado
 
 class SimuladorGUI(Node):
     def __init__(self):
@@ -30,6 +31,15 @@ class SimuladorGUI(Node):
         self.create_subscription(AprilTagWorldArray, '/apriltag_world_array', self.callback_tags, 10)
         self.create_subscription(Image, '/tag_image', self.callback_image, 10)
 
+        # Agrega esto para suscribirte al estado del brazo
+        self.brazo_status_sub = self.create_subscription(
+            Estado,
+            'estado_robot',
+            self.brazo_status_callback,
+            10
+        )
+        self.brazo_activo = False  # Variable para rastrear el estado
+
         # Agrega esto para crear el publicador
         self.boton_publisher = self.create_publisher(Bool, '/boton_start', 10)
 
@@ -40,7 +50,7 @@ class SimuladorGUI(Node):
 
         self.lista_robots = []
         self.lista_cubos = []
-        self.cv_image = np.zeros((480, 640, 3), dtype=np.uint8)
+        self.cv_image = np.zeros((1080, 1040, 3), dtype=np.uint8)
 
         # GUI en hilo separado
         gui_thread = threading.Thread(target=self.crear_gui)
@@ -157,6 +167,16 @@ class SimuladorGUI(Node):
                                       state=tk.DISABLED, command=self.confirmar_seleccion)
         self.confirmar_btn.pack(fill=tk.X, pady=10)
 
+        # --- Añade esto: Label para el estado del brazo ---
+        self.brazo_status_label = ttk.Label(
+            selection_frame,
+            text="🦾 Brazo: INACTIVO",
+            style="Status.TLabel",
+            foreground="red"  # Rojo cuando está inactivo
+        )
+        self.brazo_status_label.pack(fill=tk.X, pady=5)
+
+
         # Agrega esto en la sección de botones (después del botón de confirmación)
         self.start_btn = ttk.Button(start_frame, text="INICIAR", 
                                 state=tk.NORMAL, command=self.publicar_boton)
@@ -166,6 +186,25 @@ class SimuladorGUI(Node):
         self.actualizar_imagen()
         self.gui_ready.set()
         self.root.mainloop()
+
+    def actualizar_estado_brazo(self):
+        """Actualiza el Label del estado del brazo en la GUI"""
+        if self.brazo_activo:
+            self.brazo_status_label.config(
+                text="🦾 Brazo: MOVIÉNDOSE",
+                foreground="green"  # Verde cuando está activo
+            )
+        else:
+            self.brazo_status_label.config(
+                text="🦾 Brazo: INACTIVO",
+                foreground="red"
+            )
+
+    def brazo_status_callback(self, msg):
+        """Callback para actualizar el estado del brazo"""
+        self.brazo_activo = msg.brazo
+        if hasattr(self, 'root'):
+            self.root.after(0, self.actualizar_estado_brazo)
 
     def callback_tags(self, msg):
         """Callback para actualizar las listas de robots y cubos detectados"""
@@ -209,7 +248,7 @@ class SimuladorGUI(Node):
         try:
             image = cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
             image = PILImage.fromarray(image)
-            image = image.resize((640, 480))
+            image = image.resize((1040, 780))
             imgtk = ImageTk.PhotoImage(image=image)
 
             self.panel_imagen.imgtk = imgtk

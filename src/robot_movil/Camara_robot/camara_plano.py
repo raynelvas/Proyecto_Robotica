@@ -20,15 +20,15 @@ def rotation_matrix_to_euler_angles(R):
     return np.degrees([x, y, z])
 
 def main():
-    cap = cv2.VideoCapture("/dev/video2")
+    cap = cv2.VideoCapture("/dev/video10")
     if not cap.isOpened():
         print("No se pudo acceder a la cámara.")
         return
 
-    with np.load('src/robot_movil/Camara_robot/parametros_calibracion.npz') as X:
+    with np.load('parametros_calibracion.npz') as X:
         camera_matrix, dist_coeffs = X['mtx'], X['dist']
 
-    tag_size = 0.06  # 6 cm
+    tag_size = 0.046  # 6 cm
 
     at_detector = Detector(
         families='tag36h11',
@@ -68,6 +68,7 @@ def main():
     scale = 400  # Escala: 1 metro = 400 píxeles
     offset_x = 100
     offset_y = map_height - 100  # Origen en esquina inferior izquierda con márgenes
+    use_undistort = True  # o False si no quieres corregir
 
     print("Sistema activo. Presiona 'q' para salir.")
 
@@ -77,7 +78,13 @@ def main():
             print("No se pudo leer el frame.")
             break
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # si se desea, corregir distorsión antes de detectar
+        if use_undistort and (dist_coeffs is not None) and (np.any(dist_coeffs != 0)):
+            frame_und = cv2.undistort(frame, camera_matrix, dist_coeffs)
+        else:
+            frame_und = frame
+
+        gray = cv2.cvtColor(frame_und, cv2.COLOR_BGR2GRAY)
 
         detections = at_detector.detect(
             gray,

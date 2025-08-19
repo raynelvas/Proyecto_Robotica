@@ -55,7 +55,7 @@ def generate_launch_description():
         ld.add_action(robot_group)
 
     # RViz global
-    """ld.add_action(
+    ld.add_action(
         Node(
             package='rviz2',
             executable='rviz2',
@@ -64,6 +64,7 @@ def generate_launch_description():
             output='screen',
             parameters=[{'use_sim_time': False}]
         )
-    )"""
+    )
 
     return ld
+

@@ -9,7 +9,7 @@ import time
 
 
 class GoToPosition(py_trees.behaviour.Behaviour):
-    def __init__(self, name="GoToPosition", node=None, position='same', goal_tolerance=None):
+    def __init__(self, name="GoToPosition", node=None, position='same', goal_tolerance=0.1, max_linear_speed = 0.35, max_angular_speed = 1.0, k_linear = 0.3, k_angular = 1.0):
         super().__init__(name)
         # Declarar puertos de entrada
         self.blackboard = py_trees.blackboard.Client()
@@ -25,10 +25,10 @@ class GoToPosition(py_trees.behaviour.Behaviour):
         self.reached_goal = False
 
         # Parámetros de control
-        self.k_linear = 0.3
-        self.k_angular = 1.0
-        self.max_linear_speed = 0.35
-        self.max_angular_speed = 1.0
+        self.k_linear = k_linear
+        self.k_angular = k_angular
+        self.max_linear_speed = max_linear_speed
+        self.max_angular_speed = max_angular_speed
         self.goal_tolerance = goal_tolerance
         self.angle_tolerance = 0.08
         self.slowdown_radius = goal_tolerance + 0.1

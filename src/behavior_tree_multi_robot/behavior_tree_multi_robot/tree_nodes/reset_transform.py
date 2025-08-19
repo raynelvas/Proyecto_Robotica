@@ -4,6 +4,7 @@ import py_trees
 from msg_nuevos.srv import ResetTransform
 from rclpy.task import Future
 from msg_nuevos.msg import AprilTagWorldArray
+import time
 
 
 class ResetTransformNode(py_trees.behaviour.Behaviour):
@@ -119,3 +120,7 @@ class ResetTransformNode(py_trees.behaviour.Behaviour):
                 return py_trees.common.Status.FAILURE
 
         return py_trees.common.Status.RUNNING
+    
+    def terminate(self, new_status):
+        time.sleep(2)  # 10 Hz
+        return super().terminate(new_status)
